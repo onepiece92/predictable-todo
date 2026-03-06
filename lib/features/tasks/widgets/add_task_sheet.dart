@@ -21,6 +21,8 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
   TaskRecurring _recurring = TaskRecurring.none;
   TimeOfDay _time = const TimeOfDay(hour: 9, minute: 0);
   bool _showDemoPicker = false;
+  int _weeklyDay = DateTime.now().weekday; // 1=Mon…7=Sun
+  int _monthlyDay = 1; // 1-28 or 0=last
 
   @override
   void dispose() {
@@ -36,6 +38,32 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     }).toList();
     ref.read(taskProvider.notifier).loadDemo(tasks);
     Navigator.of(context).pop();
+  }
+
+  static const _weekDayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  String _ordinal(int n) {
+    if (n >= 11 && n <= 13) return '${n}th';
+    switch (n % 10) {
+      case 1: return '${n}st';
+      case 2: return '${n}nd';
+      case 3: return '${n}rd';
+      default: return '${n}th';
+    }
+  }
+
+  String _recurringHint() {
+    switch (_recurring) {
+      case TaskRecurring.daily:
+        return 'Auto-resets every day';
+      case TaskRecurring.weekly:
+        return 'Auto-resets every ${_weekDayNames[_weeklyDay - 1]}';
+      case TaskRecurring.monthly:
+        final label = _monthlyDay == 0 ? 'the last day' : 'the ${_ordinal(_monthlyDay)}';
+        return 'Auto-resets on $label of each month';
+      case TaskRecurring.none:
+        return '';
+    }
   }
 
   void _submit() {
@@ -57,6 +85,8 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
       priority: _priority,
       category: _category,
       recurring: _recurring,
+      weeklyDay: _recurring == TaskRecurring.weekly ? _weeklyDay : null,
+      monthlyDay: _recurring == TaskRecurring.monthly ? _monthlyDay : null,
     );
     ref.read(taskProvider.notifier).addTask(task);
     Navigator.of(context).pop();
@@ -243,6 +273,78 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                 label: (v) => v.label,
                 onSelect: (v) => setState(() => _recurring = v),
               ),
+              if (_recurring == TaskRecurring.weekly) ...[
+                const SizedBox(height: 8),
+                _Label('ON DAY'),
+                Wrap(
+                  spacing: 5, runSpacing: 5,
+                  children: const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                      .asMap()
+                      .entries
+                      .map((e) {
+                    final day = e.key + 1; // 1=Mon…7=Sun
+                    final active = _weeklyDay == day;
+                    return GestureDetector(
+                      onTap: () => setState(() => _weeklyDay = day),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: active
+                              ? AppColors.purple.withValues(alpha: 0.12)
+                              : AppColors.surface,
+                          borderRadius: BorderRadius.circular(9),
+                          border: Border.all(
+                            color: active ? AppColors.purple : AppColors.border,
+                          ),
+                        ),
+                        child: Text(e.value,
+                            style: AppTheme.sans(
+                                size: 11,
+                                weight: FontWeight.w600,
+                                color: active ? AppColors.purple : AppColors.muted)),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+              if (_recurring == TaskRecurring.monthly) ...[
+                const SizedBox(height: 8),
+                _Label('ON DAY OF MONTH'),
+                Wrap(
+                  spacing: 5, runSpacing: 5,
+                  children: [
+                    ...List.generate(28, (i) => i + 1),
+                    0, // 0 = last
+                  ].map((day) {
+                    final active = _monthlyDay == day;
+                    final label = day == 0
+                        ? 'Last'
+                        : _ordinal(day);
+                    return GestureDetector(
+                      onTap: () => setState(() => _monthlyDay = day),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: active
+                              ? AppColors.purple.withValues(alpha: 0.12)
+                              : AppColors.surface,
+                          borderRadius: BorderRadius.circular(9),
+                          border: Border.all(
+                            color: active ? AppColors.purple : AppColors.border,
+                          ),
+                        ),
+                        child: Text(label,
+                            style: AppTheme.mono(
+                                size: 10,
+                                weight: FontWeight.w700,
+                                color: active ? AppColors.purple : AppColors.muted)),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
               if (_recurring != TaskRecurring.none) ...[
                 const SizedBox(height: 6),
                 Container(
@@ -257,7 +359,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                           size: 12, color: AppColors.purple),
                       const SizedBox(width: 6),
                       Text(
-                        'Auto-resets after each ${_recurring.label.toLowerCase()} cycle',
+                        _recurringHint(),
                         style: AppTheme.sans(
                             size: 10,
                             color: AppColors.purple,

@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../tasks/providers/task_provider.dart';
+import '../../tasks/models/activity_log_model.dart';
 import '../../gamification/providers/gamification_provider.dart';
+import '../../gamification/models/skill_node_model.dart';
 import '../../../core/utils/xp_calculator.dart';
 import '../../../core/data/seed_data.dart';
 
@@ -39,6 +41,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     final lvlProgress = XpCalculator.levelProgress(totalXp);
     final rank = XpCalculator.currentRank(totalXp);
 
+    // XP within current level (not cumulative total)
+    final xpInLevel = XpCalculator.xpInLevel(totalXp);
+
     final hasTasks = tState.totalCount > 0;
 
     return Scaffold(
@@ -54,7 +59,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                 Container(
                   width: 72,
                   height: 72,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     gradient: AppColors.primaryGradient,
                     shape: BoxShape.circle,
                   ),
@@ -93,7 +98,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                               size: 15,
                               weight: FontWeight.w800,
                               color: AppColors.accent)),
-                      Text('$totalXp / ${level * XpCalculator.xpPerLevel} XP',
+                      // Show XP within current level, not cumulative total
+                      Text('$xpInLevel / ${XpCalculator.xpPerLevel} XP',
                           style:
                               AppTheme.mono(size: 10, color: AppColors.subtle)),
                     ],
@@ -124,7 +130,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
               childAspectRatio: 2,
               children: [
                 _StatBox(value: '${tState.doneCount}', label: 'Tasks Done'),
-                _StatBox(value: '30', label: 'Day Streak'),
+                _StatBox(value: '${gState.currentStreak}d', label: 'Day Streak'),
                 _StatBox(value: rank.name, label: 'Rank'),
                 _StatBox(
                     value:
@@ -222,7 +228,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                       }
                     },
                   ),
-                  const _MilestonesTab(),
+                  _MilestonesTab(
+                    tasksCompleted: tState.doneCount,
+                    totalXp: totalXp,
+                    streak: gState.currentStreak,
+                    bossDefeated: gState.boss.isDefeated,
+                    rank: rank.name,
+                  ),
                 ],
               ),
             ),
@@ -270,7 +282,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                           ],
                         ),
                       ),
-                      // use TextButton so it can be disabled when there are no tasks
                       TextButton(
                         onPressed: hasTasks
                             ? () async {
@@ -324,8 +335,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     );
   }
 
-  /// Shows a blocking confirmation dialog and returns true if the user
-  /// agreed to wipe the tasks.
   Future<bool> _confirmClear(BuildContext context, int taskCount) async {
     if (taskCount == 0) return false;
     final result = await showDialog<bool>(
@@ -411,7 +420,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
 // ── Activity Tab ─────────────────────────────────────────
 
 class _ActivityTab extends StatelessWidget {
-  final List<dynamic> log;
+  final List<ActivityLogModel> log;
   const _ActivityTab({required this.log});
 
   @override
@@ -518,7 +527,7 @@ class _BadgesTab extends StatelessWidget {
 // ── Skills Tab ───────────────────────────────────────────
 
 class _SkillsTab extends StatelessWidget {
-  final List<dynamic> skillTree;
+  final List<SkillNodeModel> skillTree;
   final int skillPoints;
   final void Function(String id) onUnlock;
 
@@ -609,42 +618,129 @@ class _SkillsTab extends StatelessWidget {
 // ── Milestones Tab ───────────────────────────────────────
 
 class _MilestonesTab extends StatelessWidget {
-  const _MilestonesTab();
+  final int tasksCompleted;
+  final int totalXp;
+  final int streak;
+  final bool bossDefeated;
+  final String rank;
 
-  static const _milestones = [
-    {'icon': '🎯', 'title': 'First Quest', 'date': 'Jan 1'},
-    {'icon': '🔥', 'title': '7-Day Streak', 'date': 'Jan 7'},
-    {'icon': '⚡', 'title': '100 XP Earned', 'date': 'Jan 10'},
-    {'icon': '🏆', 'title': 'First Boss Defeated', 'date': 'Jan 15'},
-    {'icon': '💎', 'title': 'Diamond Rank', 'date': 'Feb 2'},
-  ];
+  const _MilestonesTab({
+    required this.tasksCompleted,
+    required this.totalXp,
+    required this.streak,
+    required this.bossDefeated,
+    required this.rank,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final milestones = [
+      _Milestone(
+        icon: '🎯',
+        title: 'First Quest',
+        unlocked: tasksCompleted >= 1,
+        desc: 'Complete your first task',
+      ),
+      _Milestone(
+        icon: '⚡',
+        title: '100 XP Earned',
+        unlocked: totalXp >= 100,
+        desc: '$totalXp / 100 XP',
+      ),
+      _Milestone(
+        icon: '🔥',
+        title: '3-Day Streak',
+        unlocked: streak >= 3,
+        desc: '$streak day streak',
+      ),
+      _Milestone(
+        icon: '💼',
+        title: '10 Tasks Done',
+        unlocked: tasksCompleted >= 10,
+        desc: '$tasksCompleted / 10 tasks',
+      ),
+      _Milestone(
+        icon: '🐉',
+        title: 'Boss Slayer',
+        unlocked: bossDefeated,
+        desc: bossDefeated ? 'Dragon defeated!' : 'Defeat the boss',
+      ),
+      _Milestone(
+        icon: '🥇',
+        title: 'Gold Rank',
+        unlocked: totalXp >= 1500,
+        desc: '$totalXp / 1500 XP',
+      ),
+      _Milestone(
+        icon: '💎',
+        title: 'Diamond Rank',
+        unlocked: totalXp >= 3000,
+        desc: '$totalXp / 3000 XP',
+      ),
+      _Milestone(
+        icon: '🔥',
+        title: '7-Day Streak',
+        unlocked: streak >= 7,
+        desc: '$streak / 7 days',
+      ),
+    ];
+
     return ListView.builder(
-      itemCount: _milestones.length,
+      itemCount: milestones.length,
       itemBuilder: (_, i) {
-        final m = _milestones[i];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 5),
-          padding: const EdgeInsets.all(11),
-          decoration: AppTheme.surfaceBox(radius: 10),
-          child: Row(
-            children: [
-              Text(m['icon']!, style: const TextStyle(fontSize: 18)),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(m['title']!,
-                    style: AppTheme.sans(size: 11, weight: FontWeight.w700)),
+        final m = milestones[i];
+        return AnimatedOpacity(
+          opacity: m.unlocked ? 1.0 : 0.35,
+          duration: const Duration(milliseconds: 300),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 5),
+            padding: const EdgeInsets.all(11),
+            decoration: BoxDecoration(
+              color: m.unlocked
+                  ? AppColors.accent.withValues(alpha: 0.03)
+                  : AppColors.surface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: m.unlocked
+                    ? AppColors.accent.withValues(alpha: 0.22)
+                    : AppColors.border,
               ),
-              Text(m['date']!,
-                  style: AppTheme.mono(size: 9, color: AppColors.accent)),
-            ],
+            ),
+            child: Row(
+              children: [
+                Text(m.icon, style: const TextStyle(fontSize: 18)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(m.title,
+                      style: AppTheme.sans(size: 11, weight: FontWeight.w700)),
+                ),
+                Text(
+                  m.unlocked ? 'Unlocked' : m.desc,
+                  style: AppTheme.mono(
+                    size: 9,
+                    color: m.unlocked ? AppColors.accent : AppColors.subtle,
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
     );
   }
+}
+
+class _Milestone {
+  final String icon;
+  final String title;
+  final bool unlocked;
+  final String desc;
+  const _Milestone({
+    required this.icon,
+    required this.title,
+    required this.unlocked,
+    required this.desc,
+  });
 }
 
 // ── Shared ───────────────────────────────────────────────

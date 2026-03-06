@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/data/seed_data.dart';
+import '../../../core/utils/xp_calculator.dart';
+import '../../tasks/providers/task_provider.dart';
+import '../../gamification/providers/gamification_provider.dart';
 import '../models/leaderboard_entry_model.dart';
 
 class LeaderboardPage extends ConsumerStatefulWidget {
@@ -19,7 +22,26 @@ class _LeaderboardPageState extends ConsumerState<LeaderboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final entries = SeedData.leaderboard;
+    final tState = ref.watch(taskProvider);
+    final gState = ref.watch(gamificationProvider);
+    final totalXp = tState.doneXp + gState.bonusXp;
+    final level = XpCalculator.level(totalXp);
+
+    // Build the "You" entry from real state, replace the seed placeholder
+    final youEntry = LeaderboardEntry(
+      name: 'You',
+      xp: _filter == 'weekly' ? tState.doneXp : totalXp,
+      avatar: '🧑‍💻',
+      level: level,
+      streak: gState.currentStreak,
+      tasksWeek: tState.doneCount,
+      isYou: true,
+    );
+
+    // Replace seed "You" with live entry, sort by the relevant XP field
+    final others = SeedData.leaderboard.where((e) => !e.isYou).toList();
+    final entries = [youEntry, ...others]
+      ..sort((a, b) => b.xp.compareTo(a.xp));
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -34,7 +56,6 @@ class _LeaderboardPageState extends ConsumerState<LeaderboardPage> {
                 children: [
                   Text('Leaderboard',
                       style: AppTheme.mono(size: 20, weight: FontWeight.w800)),
-                  // Filter pills
                   Row(
                     children: ['weekly', 'all-time'].map((f) {
                       final active = _filter == f;
@@ -90,6 +111,7 @@ class _LeaderboardPageState extends ConsumerState<LeaderboardPage> {
                   return _LeaderboardCard(
                     entry: entry,
                     rank: rank,
+                    filter: _filter,
                     challengeSent: _challengeSent.contains(i),
                     onChallenge: () => setState(() {
                       if (_challengeSent.contains(i)) {
@@ -112,12 +134,14 @@ class _LeaderboardPageState extends ConsumerState<LeaderboardPage> {
 class _LeaderboardCard extends StatelessWidget {
   final LeaderboardEntry entry;
   final int rank;
+  final String filter;
   final bool challengeSent;
   final VoidCallback onChallenge;
 
   const _LeaderboardCard({
     required this.entry,
     required this.rank,
+    required this.filter,
     required this.challengeSent,
     required this.onChallenge,
   });
@@ -131,6 +155,11 @@ class _LeaderboardCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Weekly view shows tasks/week; all-time shows streak
+    final statLabel = filter == 'weekly'
+        ? '${entry.tasksWeek} tasks/wk'
+        : '🔥 ${entry.streak}d streak';
+
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.all(11),
@@ -178,11 +207,7 @@ class _LeaderboardCard extends StatelessWidget {
                         style: AppTheme.mono(
                             size: 8, color: AppColors.purple)),
                     const SizedBox(width: 6),
-                    Text('🔥 ${entry.streak}d',
-                        style: AppTheme.sans(
-                            size: 8, color: AppColors.subtle)),
-                    const SizedBox(width: 6),
-                    Text('${entry.tasksWeek} tasks/wk',
+                    Text(statLabel,
                         style: AppTheme.sans(
                             size: 8, color: AppColors.subtle)),
                   ],

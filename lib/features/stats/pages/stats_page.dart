@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../tasks/providers/task_provider.dart';
+import '../../tasks/models/task_model.dart';
 import '../../gamification/providers/gamification_provider.dart';
 import '../../../core/data/seed_data.dart';
 import '../widgets/charts/donut_chart.dart';
@@ -96,7 +97,7 @@ class _StatsPageState extends ConsumerState<StatsPage>
                 controller: _tabCtrl,
                 children: [
                   _OverviewTab(tState: tState, gState: gState),
-                  _ProjectsTab(),
+                  _ProjectsTab(tState: tState),
                   _TimeTab(heatmap: _heatmap),
                 ],
               ),
@@ -116,9 +117,51 @@ class _OverviewTab extends StatelessWidget {
 
   const _OverviewTab({required this.tState, required this.gState});
 
+  List<Map<String, dynamic>> _categoryData() {
+    final doneTasks = tState.tasks.where((t) => t.done).toList();
+    if (doneTasks.isEmpty) return SeedData.categoryData;
+
+    final totalXp = doneTasks.fold(0, (s, t) => s + t.points);
+    if (totalXp == 0) return SeedData.categoryData;
+
+    const colors = {
+      TaskCategory.work: AppColors.purple,
+      TaskCategory.health: AppColors.accent,
+      TaskCategory.learning: AppColors.gold,
+      TaskCategory.personal: AppColors.red,
+    };
+
+    return TaskCategory.values.map((cat) {
+      final xp = doneTasks
+          .where((t) => t.category == cat)
+          .fold(0, (s, t) => s + t.points);
+      final pct = (xp / totalXp * 100).round();
+      return {'name': cat.label, 'value': pct, 'color': colors[cat]!};
+    }).where((d) => (d['value'] as int) > 0).toList();
+  }
+
+  List<Map<String, dynamic>> _weeklyXpData() {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final today = DateTime.now().weekday; // 1=Mon … 7=Sun
+
+    final xpByDay = List.filled(7, 0);
+    for (final log in tState.activityLog) {
+      if (log.time.startsWith('Today')) {
+        xpByDay[today - 1] += log.points;
+      } else if (log.time.startsWith('Yesterday')) {
+        final yday = (today - 2 + 7) % 7;
+        xpByDay[yday] += log.points;
+      }
+    }
+
+    return List.generate(7, (i) => {'day': days[i], 'xp': xpByDay[i]});
+  }
+
   @override
   Widget build(BuildContext context) {
     final totalXp = tState.doneXp + gState.bonusXp;
+    final categoryData = _categoryData();
+    final weeklyXp = _weeklyXpData();
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 130),
@@ -128,12 +171,12 @@ class _OverviewTab extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            DonutChart(data: SeedData.categoryData),
+            DonutChart(data: categoryData),
             const SizedBox(width: 20),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: SeedData.categoryData.map((d) => Padding(
+                children: categoryData.map((d) => Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Row(
                     children: [
@@ -167,11 +210,11 @@ class _OverviewTab extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SparklineChart(data: SeedData.weeklyXp),
+              SparklineChart(data: weeklyXp),
               const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: SeedData.weeklyXp.map((d) => Text(
+                children: weeklyXp.map((d) => Text(
                   d['day'] as String,
                   style: AppTheme.mono(size: 8, color: AppColors.subtle),
                 )).toList(),
@@ -218,8 +261,42 @@ class _OverviewTab extends StatelessWidget {
 // ── Projects Tab ─────────────────────────────────────────
 
 class _ProjectsTab extends StatelessWidget {
+  final TaskState tState;
+  const _ProjectsTab({required this.tState});
+
+  List<Map<String, dynamic>> _projectStats() {
+    if (tState.tasks.isEmpty) return SeedData.projectStats;
+
+    const colors = [
+      AppColors.accent, AppColors.purple, AppColors.gold,
+      AppColors.orange, AppColors.red,
+    ];
+
+    final projects = <String, Map<String, dynamic>>{};
+    for (final task in tState.tasks) {
+      final p = task.project;
+      projects.putIfAbsent(p, () => {'completed': 0, 'total': 0});
+      projects[p]!['total'] = (projects[p]!['total'] as int) + 1;
+      if (task.done) {
+        projects[p]!['completed'] = (projects[p]!['completed'] as int) + 1;
+      }
+    }
+
+    return projects.entries.toList().asMap().entries.map((e) {
+      final color = colors[e.key % colors.length];
+      return {
+        'name': e.value.key,
+        'completed': e.value.value['completed'],
+        'total': e.value.value['total'],
+        'color': color,
+      };
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final projectStats = _projectStats();
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 130),
       children: [
@@ -228,12 +305,12 @@ class _ProjectsTab extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: AppTheme.surfaceBox(),
-          child: HorizontalBarChart(data: SeedData.projectStats),
+          child: HorizontalBarChart(data: projectStats),
         ),
         const SizedBox(height: 16),
         _SectionLabel('PROJECT DETAILS'),
         const SizedBox(height: 8),
-        ...SeedData.projectStats.map((p) {
+        ...projectStats.map((p) {
           final pct = (p['completed'] as int) / (p['total'] as int);
           return Container(
             margin: const EdgeInsets.only(bottom: 8),

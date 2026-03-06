@@ -18,19 +18,26 @@ extension TaskRecurringExt on TaskRecurring {
   }
 
   /// Returns true if [lastCompleted] is far enough in the past to warrant a reset.
-  bool isDue(DateTime? lastCompleted) {
+  /// [weeklyDay] = 1(Mon)…7(Sun), [monthlyDay] = 1-28 or 0 = last day of month.
+  bool isDue(DateTime? lastCompleted, {int? weeklyDay, int? monthlyDay}) {
     if (this == TaskRecurring.none || lastCompleted == null) return false;
     final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final lastDay = DateTime(lastCompleted.year, lastCompleted.month, lastCompleted.day);
     switch (this) {
       case TaskRecurring.daily:
-        return now.year != lastCompleted.year ||
-            now.month != lastCompleted.month ||
-            now.day != lastCompleted.day;
+        return today.isAfter(lastDay);
       case TaskRecurring.weekly:
-        return now.difference(lastCompleted).inDays >= 7;
+        final targetWeekday = weeklyDay ?? 1;
+        final daysBack = (today.weekday - targetWeekday + 7) % 7;
+        final lastOccurrence = today.subtract(Duration(days: daysBack));
+        return lastDay.isBefore(lastOccurrence);
       case TaskRecurring.monthly:
-        return now.year > lastCompleted.year ||
-            now.month > lastCompleted.month;
+        final lastDayOfMonth = DateTime(now.year, now.month + 1, 0).day;
+        final targetDay = (monthlyDay == 0 ? lastDayOfMonth : (monthlyDay ?? 1))
+            .clamp(1, lastDayOfMonth);
+        final thisOccurrence = DateTime(now.year, now.month, targetDay);
+        return !today.isBefore(thisOccurrence) && lastDay.isBefore(thisOccurrence);
       case TaskRecurring.none:
         return false;
     }
@@ -81,6 +88,10 @@ class TaskModel {
   final int bonusEarned;
   final TaskRecurring recurring;
   final DateTime? lastCompletedAt;
+  /// 1=Mon…7=Sun, null = any day
+  final int? weeklyDay;
+  /// 1-28 = specific date, 0 = last day of month, null = any day
+  final int? monthlyDay;
 
   const TaskModel({
     required this.id,
@@ -96,6 +107,8 @@ class TaskModel {
     this.bonusEarned = 0,
     this.recurring = TaskRecurring.none,
     this.lastCompletedAt,
+    this.weeklyDay,
+    this.monthlyDay,
   });
 
   TaskModel copyWith({
@@ -113,6 +126,8 @@ class TaskModel {
     TaskRecurring? recurring,
     DateTime? lastCompletedAt,
     bool clearLastCompleted = false,
+    int? weeklyDay,
+    int? monthlyDay,
   }) =>
       TaskModel(
         id: id ?? this.id,
@@ -129,5 +144,45 @@ class TaskModel {
         recurring: recurring ?? this.recurring,
         lastCompletedAt:
             clearLastCompleted ? null : (lastCompletedAt ?? this.lastCompletedAt),
+        weeklyDay: weeklyDay ?? this.weeklyDay,
+        monthlyDay: monthlyDay ?? this.monthlyDay,
       );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'desc': desc,
+    'time': time,
+    'points': points,
+    'project': project,
+    'streak': streak,
+    'done': done,
+    'priority': priority.index,
+    'category': category.index,
+    'bonusEarned': bonusEarned,
+    'recurring': recurring.index,
+    'lastCompletedAt': lastCompletedAt?.toIso8601String(),
+    'weeklyDay': weeklyDay,
+    'monthlyDay': monthlyDay,
+  };
+
+  factory TaskModel.fromJson(Map<String, dynamic> j) => TaskModel(
+    id: j['id'] as int,
+    title: j['title'] as String,
+    desc: j['desc'] as String,
+    time: j['time'] as String,
+    points: j['points'] as int,
+    project: j['project'] as String,
+    streak: j['streak'] as int,
+    done: j['done'] as bool,
+    priority: TaskPriority.values[j['priority'] as int],
+    category: TaskCategory.values[j['category'] as int],
+    bonusEarned: j['bonusEarned'] as int? ?? 0,
+    recurring: TaskRecurring.values[j['recurring'] as int? ?? 0],
+    lastCompletedAt: j['lastCompletedAt'] != null
+        ? DateTime.parse(j['lastCompletedAt'] as String)
+        : null,
+    weeklyDay: j['weeklyDay'] as int?,
+    monthlyDay: j['monthlyDay'] as int?,
+  );
 }

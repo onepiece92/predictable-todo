@@ -199,6 +199,7 @@ class _AddFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!location.startsWith('/tasks')) return const SizedBox.shrink();
     return GestureDetector(
       onTap: () => showModalBottomSheet(
         context: context,

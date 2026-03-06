@@ -5,7 +5,7 @@ import '../models/task_model.dart';
 
 class ProofModal extends StatefulWidget {
   final TaskModel task;
-  final void Function(int bonusXp) onSubmit;
+  final void Function(int bonusXp, int rating) onSubmit;
 
   const ProofModal({super.key, required this.task, required this.onSubmit});
 
@@ -155,7 +155,7 @@ class _ProofModalState extends State<ProofModal> {
             GestureDetector(
               onTap: () {
                 Navigator.of(context).pop();
-                widget.onSubmit(_bonusXp);
+                widget.onSubmit(_bonusXp, _rating);
               },
               child: Container(
                 width: double.infinity,

@@ -17,6 +17,7 @@ import '../../gamification/widgets/challenges_panel.dart';
 import '../../gamification/widgets/spin_wheel_modal.dart';
 import '../../gamification/widgets/loot_box_modal.dart';
 import '../models/task_model.dart';
+import '../../notifications/models/notification_model.dart';
 
 class TasksPage extends ConsumerWidget {
   const TasksPage({super.key});
@@ -44,7 +45,6 @@ class TasksPage extends ConsumerWidget {
               lvlProgress: lvlProgress,
               unread: unread,
               pendingChallenges: pendingChallenges,
-              spinUsed: gState.spinUsed,
               onNotif: () => showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
@@ -57,15 +57,18 @@ class TasksPage extends ConsumerWidget {
                 backgroundColor: Colors.transparent,
                 builder: (_) => const ChallengesPanel(),
               ),
-              onSpin: () => showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (_) => SpinWheelModal(
-                  onResult: (seg) =>
-                      ref.read(gamificationProvider.notifier).applySpinResult(seg),
-                ),
-              ),
+              onSpin: gState.isSpinAvailable
+                  ? () => showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) => SpinWheelModal(
+                          onResult: (seg) => ref
+                              .read(gamificationProvider.notifier)
+                              .applySpinResult(seg),
+                        ),
+                      )
+                  : null,
             ),
             Expanded(
               child: ListView(
@@ -135,6 +138,15 @@ class TasksPage extends ConsumerWidget {
     );
   }
 
+  void _notify(WidgetRef ref, String text) {
+    ref.read(notificationProvider.notifier).add(NotificationModel(
+      id: DateTime.now().millisecondsSinceEpoch,
+      text: text,
+      time: 'Just now',
+      read: false,
+    ));
+  }
+
   void _handleToggle(BuildContext context, WidgetRef ref, TaskModel task) {
     if (task.done) {
       // Uncomplete
@@ -150,22 +162,25 @@ class TasksPage extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         builder: (_) => ProofModal(
           task: task,
-          onSubmit: (bonusXp) => _completeTask(context, ref, task, bonusXp),
+          onSubmit: (bonusXp, rating) => _completeTask(context, ref, task, bonusXp, rating),
         ),
       );
     }
   }
 
   void _completeTask(
-      BuildContext context, WidgetRef ref, TaskModel task, int proofBonus) {
+      BuildContext context, WidgetRef ref, TaskModel task, int proofBonus, int rating) {
     final gNotifier = ref.read(gamificationProvider.notifier);
     final tNotifier = ref.read(taskProvider.notifier);
     final effects = ref.read(effectsProvider.notifier);
     final challenges = ref.read(challengeProvider.notifier);
 
+    // Capture boss state BEFORE mutation to detect defeat transition
+    final bossWasAlive = !ref.read(gamificationProvider).boss.isDefeated;
+
     final multiBonus = gNotifier.onTaskCompleted(task.points);
     final totalBonus = multiBonus + proofBonus;
-    tNotifier.completeTask(task.id, totalBonus);
+    tNotifier.completeTask(task.id, totalBonus, rating: rating);
     challenges.onTaskCompleted(
         task, ref.read(gamificationProvider).combo);
 
@@ -179,26 +194,37 @@ class TasksPage extends ConsumerWidget {
       multiplier: ref.read(gamificationProvider).effectiveMulti,
     );
 
-    // Toast for combos
+    // Toast + notification for combos
     final combo = ref.read(gamificationProvider).combo;
+    final gState = ref.read(gamificationProvider);
     if (combo == 3) {
       effects.showToast(icon: '🔥', title: '3× Combo!', desc: "You're on fire!");
+      _notify(ref, '🔥 3× Combo! You\'re on a roll!');
     } else if (combo == 5) {
       effects.showToast(
           icon: '⚡', title: 'ULTRA COMBO!', desc: '4× XP multiplier!');
+      _notify(ref, '⚡ ULTRA COMBO! 4× XP multiplier active!');
     }
 
-    // Boss defeated toast
+    // Streak milestone notifications
+    final streak = gState.currentStreak;
+    if (streak == 3 || streak == 7 || streak == 14 || streak == 30) {
+      _notify(ref, '🔥 $streak-day streak! Keep it up!');
+    }
+
+    // Boss defeated toast + notification — only fires when boss transitions alive → defeated
     final boss = ref.read(gamificationProvider).boss;
-    if (boss.isDefeated && !ref.read(gamificationProvider).boss.isDefeated) {
+    if (bossWasAlive && boss.isDefeated) {
       effects.showToast(
           icon: '🐉',
           title: 'Boss Defeated!',
           desc: '+${boss.reward} XP earned!');
+      _notify(ref, '🐉 Weekly boss defeated! +${boss.reward} XP earned!');
     }
 
-    // Loot box
-    if (ref.read(gamificationProvider.notifier).shouldShowLoot) {
+    // Loot box — capture before delay to avoid race with next task completion
+    final showLoot = ref.read(gamificationProvider.notifier).shouldShowLoot;
+    if (showLoot) {
       Future.delayed(const Duration(milliseconds: 800), () {
         if (context.mounted) {
           showModalBottomSheet(
@@ -223,20 +249,18 @@ class _Header extends StatelessWidget {
   final double lvlProgress;
   final int unread;
   final int pendingChallenges;
-  final bool spinUsed;
   final VoidCallback onNotif;
   final VoidCallback onChallenges;
-  final VoidCallback onSpin;
+  final VoidCallback? onSpin;
 
   const _Header({
     required this.level,
     required this.lvlProgress,
     required this.unread,
     required this.pendingChallenges,
-    required this.spinUsed,
     required this.onNotif,
     required this.onChallenges,
-    required this.onSpin,
+    this.onSpin,
   });
 
   @override
@@ -294,10 +318,10 @@ class _Header extends StatelessWidget {
           // Action buttons
           Row(
             children: [
-              if (!spinUsed) _IconBtn(
-                onTap: onSpin,
-                child: const Text('🎰', style: TextStyle(fontSize: 15)),
+              if (onSpin != null) _IconBtn(
+                onTap: onSpin!,
                 borderColor: AppColors.gold.withValues(alpha: 0.35),
+                child: const Text('🎰', style: TextStyle(fontSize: 15)),
               ),
               const SizedBox(width: 7),
               _IconBtn(

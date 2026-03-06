@@ -10,17 +10,17 @@ class ChallengeNotifier extends StateNotifier<List<ChallengeModel>> {
   bool get allDone => state.every((c) => c.done);
 
   void onTaskCompleted(TaskModel task, int completedInRow) {
+    final hour = DateTime.now().hour;
     state = state.map((ch) {
       if (ch.done) return ch;
-      // Health Hero: 2 health tasks
-      if (ch.id == 3 && task.category == TaskCategory.health) {
-        return ch.copyWith(done: true);
+      switch (ch.type) {
+        case ChallengeType.earlyBird:
+          return hour < 8 ? ch.copyWith(done: true) : ch;
+        case ChallengeType.tripleThreat:
+          return completedInRow >= 3 ? ch.copyWith(done: true) : ch;
+        case ChallengeType.healthHero:
+          return task.category == TaskCategory.health ? ch.copyWith(done: true) : ch;
       }
-      // Triple Threat: 3 in a row (combo)
-      if (ch.id == 2 && completedInRow >= 3) {
-        return ch.copyWith(done: true);
-      }
-      return ch;
     }).toList();
   }
 

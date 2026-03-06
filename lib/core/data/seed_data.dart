@@ -52,9 +52,9 @@ class SeedData {
   );
 
   static const List<ChallengeModel> challenges = [
-    ChallengeModel(id: 1, title: 'Early Bird',    desc: 'Complete a task before 8 AM',    reward: 75,  icon: '🌅', done: false),
-    ChallengeModel(id: 2, title: 'Triple Threat', desc: 'Complete 3 tasks in a row',       reward: 100, icon: '⚡', done: false),
-    ChallengeModel(id: 3, title: 'Health Hero',   desc: 'Complete 2 Health tasks',         reward: 60,  icon: '💪', done: false),
+    ChallengeModel(id: 1, type: ChallengeType.earlyBird,    title: 'Early Bird',    desc: 'Complete a task before 8 AM', reward: 75,  icon: '🌅', done: false),
+    ChallengeModel(id: 2, type: ChallengeType.tripleThreat, title: 'Triple Threat', desc: 'Complete 3 tasks in a row',   reward: 100, icon: '⚡', done: false),
+    ChallengeModel(id: 3, type: ChallengeType.healthHero,   title: 'Health Hero',   desc: 'Complete 2 Health tasks',     reward: 60,  icon: '💪', done: false),
   ];
 
   static const List<NotificationModel> notifications = [
@@ -103,13 +103,13 @@ class SeedData {
   ];
 
   static const List<ActivityLogModel> activityLog = [
-    ActivityLogModel(task: 'Review Pull Requests', points: 80,  time: 'Today, 9:14 AM',      icon: '💼'),
-    ActivityLogModel(task: 'Team Standup Notes',   points: 25,  time: 'Today, 8:52 AM',      icon: '💼'),
-    ActivityLogModel(task: 'Drink 2L Water',       points: 20,  time: 'Today, 6:00 PM',      icon: '💪'),
-    ActivityLogModel(task: 'Morning Meditation',   points: 50,  time: 'Yesterday, 6:35 AM',  icon: '💪'),
-    ActivityLogModel(task: 'Gym Session',          points: 100, time: 'Yesterday, 5:22 PM',  icon: '💪'),
-    ActivityLogModel(task: 'Read 20 Pages',        points: 30,  time: 'Yesterday, 12:45 PM', icon: '📚'),
-    ActivityLogModel(task: 'Journal Entry',        points: 40,  time: 'Yesterday, 9:40 PM',  icon: '🏠'),
+    ActivityLogModel(taskId: 2, task: 'Review Pull Requests', points: 80,  time: 'Today, 9:14 AM',      icon: '💼'),
+    ActivityLogModel(taskId: 7, task: 'Team Standup Notes',   points: 25,  time: 'Today, 8:52 AM',      icon: '💼'),
+    ActivityLogModel(taskId: 8, task: 'Drink 2L Water',       points: 20,  time: 'Today, 6:00 PM',      icon: '💪'),
+    ActivityLogModel(taskId: 1, task: 'Morning Meditation',   points: 50,  time: 'Yesterday, 6:35 AM',  icon: '💪'),
+    ActivityLogModel(taskId: 4, task: 'Gym Session',          points: 100, time: 'Yesterday, 5:22 PM',  icon: '💪'),
+    ActivityLogModel(taskId: 3, task: 'Read 20 Pages',        points: 30,  time: 'Yesterday, 12:45 PM', icon: '📚'),
+    ActivityLogModel(taskId: 6, task: 'Journal Entry',        points: 40,  time: 'Yesterday, 9:40 PM',  icon: '🏠'),
   ];
 
   static final List<LootItemModel> lootPool = [

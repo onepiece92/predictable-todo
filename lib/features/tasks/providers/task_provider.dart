@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/task_model.dart';
 import '../models/activity_log_model.dart';
 import '../../../core/data/seed_data.dart';
+import '../../../core/services/storage_service.dart';
 
 class TaskState {
   final List<TaskModel> tasks;
@@ -28,36 +30,50 @@ class TaskState {
 }
 
 class TaskNotifier extends StateNotifier<TaskState> {
-  late final Timer _recurTimer;
+  Timer? _recurTimer;
 
   TaskNotifier()
-      : super(TaskState(tasks: SeedData.tasks, activityLog: SeedData.activityLog)) {
+      : super(const TaskState(tasks: [], activityLog: [])) {
+    _init();
+  }
+
+  Future<void> _init() async {
+    final savedTasks = await StorageService.loadTasks();
+    final savedLog = await StorageService.loadLog();
+    state = TaskState(
+      tasks: savedTasks ?? SeedData.tasks,
+      activityLog: savedLog ?? SeedData.activityLog,
+    );
     _resetDueTasks();
     _recurTimer = Timer.periodic(const Duration(minutes: 1), (_) => _resetDueTasks());
   }
 
   @override
   void dispose() {
-    _recurTimer.cancel();
+    _recurTimer?.cancel();
     super.dispose();
   }
 
-  /// Resets any recurring tasks whose interval has elapsed.
+  void _persist() {
+    StorageService.saveTasks(state.tasks);
+    StorageService.saveLog(state.activityLog);
+  }
+
   void _resetDueTasks() {
     final updated = state.tasks.map((t) {
       if (t.recurring == TaskRecurring.none || !t.done) return t;
-      if (t.recurring.isDue(t.lastCompletedAt)) {
+      if (t.recurring.isDue(t.lastCompletedAt, weeklyDay: t.weeklyDay, monthlyDay: t.monthlyDay)) {
         return t.copyWith(done: false, bonusEarned: 0, clearLastCompleted: true);
       }
       return t;
     }).toList();
     if (updated.any((t) => state.tasks.any((o) => o.id == t.id && o.done != t.done))) {
       state = state.copyWith(tasks: updated);
+      _persist();
     }
   }
 
-  /// Marks a task done and logs it. Returns the task (for XP calculation upstream).
-  TaskModel? completeTask(int id, int bonusEarned) {
+  TaskModel? completeTask(int id, int bonusEarned, {int rating = 0}) {
     TaskModel? found;
     state = state.copyWith(
       tasks: state.tasks.map((t) {
@@ -72,15 +88,19 @@ class TaskNotifier extends StateNotifier<TaskState> {
     );
     if (found != null) {
       final now = DateTime.now();
-      final timeStr = _formatTime(now);
+      final tod = TimeOfDay.fromDateTime(now);
+      final timeStr = '${tod.hourOfPeriod}:${tod.minute.toString().padLeft(2, '0')} ${tod.period == DayPeriod.am ? 'AM' : 'PM'}';
       final log = ActivityLogModel(
+        taskId: found!.id,
         task: found!.title,
         points: found!.points + bonusEarned,
         time: 'Today, $timeStr',
         icon: found!.category.icon,
+        rating: rating,
       );
       state = state.copyWith(activityLog: [log, ...state.activityLog]);
     }
+    _persist();
     return found;
   }
 
@@ -95,30 +115,25 @@ class TaskNotifier extends StateNotifier<TaskState> {
     );
     if (found != null) {
       state = state.copyWith(
-        activityLog: state.activityLog
-            .where((a) => !(a.task == found!.title && a.time.startsWith('Today')))
-            .toList(),
+        activityLog: state.activityLog.where((a) => a.taskId != found!.id).toList(),
       );
     }
+    _persist();
   }
 
   void addTask(TaskModel task) {
     state = state.copyWith(tasks: [...state.tasks, task]);
+    _persist();
   }
 
   void loadDemo(List<TaskModel> tasks) {
     state = state.copyWith(tasks: [...state.tasks, ...tasks]);
+    _persist();
   }
 
   void clearAll() {
     state = const TaskState(tasks: [], activityLog: []);
-  }
-
-  String _formatTime(DateTime dt) {
-    final h = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
-    final m = dt.minute.toString().padLeft(2, '0');
-    final ampm = dt.hour >= 12 ? 'PM' : 'AM';
-    return '$h:$m $ampm';
+    _persist();
   }
 }
 

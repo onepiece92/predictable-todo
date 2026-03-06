@@ -28,13 +28,13 @@ class ComboBanner extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${combo}× COMBO!',
+                Text('$combo× COMBO!',
                     style: AppTheme.mono(size: 11, weight: FontWeight.w800, color: AppColors.red)),
                 Text('Keep going!', style: AppTheme.sans(size: 8, color: AppColors.subtle)),
               ],
             ),
           ),
-          Text('${comboMulti}×',
+          Text('$comboMulti×',
               style: AppTheme.mono(size: 15, weight: FontWeight.w800, color: AppColors.gold)),
         ],
       ),
@@ -61,7 +61,7 @@ class MultiplierBanner extends StatelessWidget {
           const Text('✨', style: TextStyle(fontSize: 14)),
           const SizedBox(width: 8),
           Expanded(
-            child: Text('${multiplier}× Multiplier Active',
+            child: Text('$multiplier× Multiplier Active',
                 style: AppTheme.sans(size: 10, weight: FontWeight.w700, color: AppColors.purple)),
           ),
           Text('Next task', style: AppTheme.sans(size: 8, color: AppColors.subtle)),

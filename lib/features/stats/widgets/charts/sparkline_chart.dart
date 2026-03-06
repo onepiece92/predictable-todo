@@ -53,7 +53,7 @@ class _SparklinePainter extends CustomPainter {
       ).createShader(Rect.fromLTWH(0, 0, w, h));
 
     final fillPath = Path()..moveTo(0, h);
-    for (final p in points) fillPath.lineTo(p.dx, p.dy);
+    for (final p in points) { fillPath.lineTo(p.dx, p.dy); }
     fillPath.lineTo(w, h);
     fillPath.close();
     canvas.drawPath(fillPath, fillPaint);
@@ -67,7 +67,7 @@ class _SparklinePainter extends CustomPainter {
       ..strokeJoin = StrokeJoin.round;
 
     final linePath = Path()..moveTo(points.first.dx, points.first.dy);
-    for (int i = 1; i < points.length; i++) linePath.lineTo(points[i].dx, points[i].dy);
+    for (int i = 1; i < points.length; i++) { linePath.lineTo(points[i].dx, points[i].dy); }
     canvas.drawPath(linePath, linePaint);
   }
 
