@@ -113,6 +113,24 @@ class TaskModel {
   /// 1-28 = specific date, 0 = last day of month, null = any day
   final int? monthlyDay;
 
+  int get durationMinutes {
+    final t = time.toLowerCase().trim();
+    if (t.contains('am') || t.contains('pm') || t.contains(':')) return 0;
+
+    // Parse formats like "15m", "1h", "1.5h", "1h 30m"
+    int total = 0;
+    final parts = t.split(' ');
+    for (final p in parts) {
+      if (p.endsWith('m')) {
+        total += int.tryParse(p.replaceAll('m', '')) ?? 0;
+      } else if (p.endsWith('h')) {
+        final val = double.tryParse(p.replaceAll('h', '')) ?? 0;
+        total += (val * 60).round();
+      }
+    }
+    return total;
+  }
+
   String get recurringLabel {
     if (recurring == TaskRecurring.none) return '';
     if (recurring == TaskRecurring.daily) return 'Daily';

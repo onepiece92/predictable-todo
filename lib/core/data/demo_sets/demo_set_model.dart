@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../features/tasks/models/task_model.dart';
 import '../../../features/tasks/models/note_model.dart';
+import '../../../features/leaderboard/models/leaderboard_entry_model.dart';
 
 class DemoSet {
   final String id;
@@ -10,6 +11,7 @@ class DemoSet {
   final Color color;
   final List<TaskModel> tasks;
   final List<NoteModel> notes;
+  final List<LeaderboardEntry> leaderboard;
   final List<Map<String, dynamic>> projectStats;
   final List<Map<String, dynamic>> hourlyData;
 
@@ -21,6 +23,7 @@ class DemoSet {
     required this.color,
     required this.tasks,
     this.notes = const [],
+    this.leaderboard = const [],
     this.projectStats = const [],
     this.hourlyData = const [],
   });

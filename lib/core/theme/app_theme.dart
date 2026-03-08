@@ -71,22 +71,30 @@ class AppTheme {
     double size = 12,
     FontWeight weight = FontWeight.w700,
     Color? color,
+    double? letterSpacing,
+    double? height,
   }) =>
       GoogleFonts.jetBrainsMono(
         fontSize: size,
         fontWeight: weight,
         color: color ?? AppColors.text,
+        letterSpacing: letterSpacing,
+        height: height,
       );
 
   static TextStyle sans({
     double size = 13,
     FontWeight weight = FontWeight.w400,
     Color? color,
+    double? letterSpacing,
+    double? height,
   }) =>
       GoogleFonts.nunito(
         fontSize: size,
         fontWeight: weight,
         color: color ?? AppColors.text,
+        letterSpacing: letterSpacing,
+        height: height,
       );
 
   // ── Box decoration helpers ──────────────────────────

@@ -5,18 +5,21 @@ import '../models/task_model.dart';
 import '../models/activity_log_model.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/data/seed_data.dart';
+import '../../leaderboard/models/leaderboard_entry_model.dart';
 
 class TaskState {
   final List<TaskModel> tasks;
   final List<ActivityLogModel> activityLog;
   final List<Map<String, dynamic>> projectStats;
   final List<Map<String, dynamic>> hourlyData;
+  final List<LeaderboardEntry> leaderboardOthers;
 
   const TaskState({
     required this.tasks,
     required this.activityLog,
     this.projectStats = const [],
     this.hourlyData = const [],
+    this.leaderboardOthers = const [],
   });
 
   int get doneCount => tasks.where((t) => t.done).length;
@@ -28,12 +31,14 @@ class TaskState {
     List<ActivityLogModel>? activityLog,
     List<Map<String, dynamic>>? projectStats,
     List<Map<String, dynamic>>? hourlyData,
+    List<LeaderboardEntry>? leaderboardOthers,
   }) =>
       TaskState(
         tasks: tasks ?? this.tasks,
         activityLog: activityLog ?? this.activityLog,
         projectStats: projectStats ?? this.projectStats,
         hourlyData: hourlyData ?? this.hourlyData,
+        leaderboardOthers: leaderboardOthers ?? this.leaderboardOthers,
       );
 }
 
@@ -58,6 +63,8 @@ class TaskNotifier extends StateNotifier<TaskState> {
       activityLog: log ?? [],
       projectStats: savedStats ?? SeedData.projectStats,
       hourlyData: savedHourly ?? SeedData.hourlyData,
+      leaderboardOthers: List<LeaderboardEntry>.from(
+          SeedData.leaderboard.where((e) => !e.isYou)),
     );
     _initialized = true;
     _resetDueTasks();
@@ -122,9 +129,29 @@ class TaskNotifier extends StateNotifier<TaskState> {
         rating: rating,
       );
       state = state.copyWith(activityLog: [log, ...state.activityLog]);
+      _updateHourlyStats(now);
     }
     _persist();
     return found;
+  }
+
+  void _updateHourlyStats(DateTime now) {
+    final hour = now.hour;
+    final suffix = hour >= 12 ? 'p' : 'a';
+    final displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+    final label = '$displayHour$suffix';
+
+    final updated = List<Map<String, dynamic>>.from(
+      state.hourlyData.map((e) => Map<String, dynamic>.from(e)),
+    );
+
+    final idx = updated.indexWhere((e) => e['h'] == label);
+    if (idx != -1) {
+      updated[idx]['v'] = (updated[idx]['v'] as int) + 1;
+    } else {
+      updated.add({'h': label, 'v': 1});
+    }
+    state = state.copyWith(hourlyData: updated);
   }
 
   void uncompleteTask(int id) {
@@ -150,24 +177,32 @@ class TaskNotifier extends StateNotifier<TaskState> {
     _persist();
   }
 
-  Future<void> loadDemo(List<TaskModel> tasks,
-      {List<Map<String, dynamic>>? projectStats,
-      List<Map<String, dynamic>>? hourlyData}) async {
+  Future<void> loadDemo(
+    List<TaskModel> tasks, {
+    List<Map<String, dynamic>>? projectStats,
+    List<Map<String, dynamic>>? hourlyData,
+    List<LeaderboardEntry>? leaderboard,
+  }) async {
     await _init();
     state = state.copyWith(
       tasks: [...state.tasks, ...tasks],
       projectStats: projectStats,
       hourlyData: hourlyData,
+      leaderboardOthers: leaderboard != null
+          ? List<LeaderboardEntry>.from(leaderboard.where((e) => !e.isYou))
+          : state.leaderboardOthers,
     );
     _persist();
   }
 
   void clearAll() {
-    state = const TaskState(
+    state = TaskState(
       tasks: [],
       activityLog: [],
       projectStats: SeedData.projectStats,
       hourlyData: SeedData.hourlyData,
+      leaderboardOthers: List<LeaderboardEntry>.from(
+          SeedData.leaderboard.where((e) => !e.isYou)),
     );
     _persist();
   }

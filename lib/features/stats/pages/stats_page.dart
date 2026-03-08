@@ -385,9 +385,14 @@ class _TimeTab extends StatelessWidget {
     final activityData =
         tState.hourlyData.isNotEmpty ? tState.hourlyData : SeedData.hourlyData;
 
-    final maxV = activityData
-        .map((d) => (d['v'] as num).toInt())
-        .reduce((a, b) => a > b ? a : b);
+    final values = activityData
+        .map((d) => (d['v'] ?? d['tasks'] ?? 0) as num)
+        .map((n) => n.toInt())
+        .toList();
+
+    final maxV = values.isEmpty
+        ? 1
+        : values.reduce((a, b) => a > b ? a : b).clamp(1, 999999);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 130),
@@ -398,15 +403,19 @@ class _TimeTab extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           decoration: AppTheme.surfaceBox(),
           child: Column(
-            children: activityData.map((d) {
-              final pct = (d['v'] as num).toInt() / maxV;
+            children: activityData.asMap().entries.map((entry) {
+              final d = entry.value;
+              final val = values[entry.key];
+              final pct = val / maxV;
+              final label = (d['h'] ?? d['hour'] ?? '--') as String;
+
               return Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Row(
                   children: [
                     SizedBox(
                       width: 28,
-                      child: Text(d['h'] as String,
+                      child: Text(label,
                           textAlign: TextAlign.right,
                           style:
                               AppTheme.mono(size: 9, color: AppColors.muted)),

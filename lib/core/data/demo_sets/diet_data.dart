@@ -1,6 +1,7 @@
 import '../../theme/app_colors.dart';
 import '../../../features/tasks/models/task_model.dart';
 import '../../../features/tasks/models/note_model.dart';
+import '../../../features/leaderboard/models/leaderboard_entry_model.dart';
 import 'demo_set_model.dart';
 
 final dietData = DemoSet(
@@ -79,29 +80,31 @@ final dietData = DemoSet(
           '🥗 Fiber First: Starting your meal with a giant salad reduces the glucose spike of the subsequent dishes.',
       createdAt: DateTime.now().subtract(const Duration(days: 4)),
     ),
-    NoteModel(
-      id: 'diet-n3',
-      content:
-          '🥗 Meal Timing: Consuming your largest meal earlier in the day often leads to higher satiety and better metabolic flexibility.',
-      createdAt: DateTime.now().subtract(const Duration(days: 6)),
+  ],
+  leaderboard: [
+    LeaderboardEntry(
+      name: 'Chef Marco',
+      avatar: 'https://i.pravatar.cc/150?u=marco_diet',
+      xp: 14200,
+      level: 7,
+      streak: 21,
+      tasksWeek: 35,
     ),
-    NoteModel(
-      id: 'diet-n4',
-      content:
-          '💻 Tech win: Finally using git to version control my meal prep recipes! Still hoping for that magic button for instant logging though. 🍎',
-      createdAt: DateTime.now().subtract(const Duration(minutes: 15)),
+    LeaderboardEntry(
+      name: 'Sofia (Low Carb)',
+      avatar: 'https://i.pravatar.cc/150?u=sofia_diet',
+      xp: 12800,
+      level: 6,
+      streak: 15,
+      tasksWeek: 28,
     ),
-    NoteModel(
-      id: 'diet-n5',
-      content:
-          '🌙 I saw a dream today: A buffet where everything was 0 calories but tasted like a 5-star restaurant. Pure bliss.',
-      createdAt: DateTime.now().subtract(const Duration(hours: 5)),
-    ),
-    NoteModel(
-      id: 'diet-n6',
-      content:
-          '✨ Something good happened today: Found a sugar-free snack that actually tastes good. The search is over.',
-      createdAt: DateTime.now().subtract(const Duration(hours: 20)),
+    LeaderboardEntry(
+      name: 'Leo (Paleo King)',
+      avatar: 'https://i.pravatar.cc/150?u=leo_diet',
+      xp: 11500,
+      level: 5,
+      streak: 7,
+      tasksWeek: 20,
     ),
   ],
   projectStats: [

@@ -1,7 +1,9 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../models/leaderboard_entry_model.dart';
+import '../../../shared/widgets/app_avatar.dart';
 
 class Podium extends StatelessWidget {
   final List<LeaderboardEntry> top3;
@@ -51,12 +53,29 @@ class _PodiumItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
+    return SizedBox(
+      width: 100,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          // Avatar
-          Text(entry.avatar, style: const TextStyle(fontSize: 32)),
+          // Avatar with floating animation
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: 1),
+            duration: Duration(milliseconds: 1500 + (rank * 200)),
+            curve: Curves.easeInOut,
+            builder: (context, value, child) {
+              final offset = sin(value * 2 * pi) * 4;
+              return Transform.translate(
+                offset: Offset(0, offset),
+                child: AppAvatar(
+                    avatar: entry.avatar,
+                    size: rank == 1 ? 60 : 50,
+                    fontSize: rank == 1 ? 38 : 32),
+              );
+            },
+            onEnd:
+                () {}, // Handled by repeating via a controller if needed, but simple Tween is fine for basic breath
+          ),
           const SizedBox(height: 8),
 
           // Name
@@ -94,6 +113,15 @@ class _PodiumItem extends StatelessWidget {
                   const BorderRadius.vertical(top: Radius.circular(8)),
               border:
                   Border.all(color: _color.withValues(alpha: 0.45), width: 1.5),
+              boxShadow: rank == 1
+                  ? [
+                      BoxShadow(
+                        color: _color.withValues(alpha: 0.2),
+                        blurRadius: 20,
+                        spreadRadius: 5,
+                      )
+                    ]
+                  : null,
             ),
             child: Stack(
               children: [

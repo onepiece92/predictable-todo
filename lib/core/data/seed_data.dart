@@ -113,9 +113,9 @@ class SeedData {
   static const List<LeaderboardEntry> leaderboard = [
     LeaderboardEntry(
       name: 'You',
-      avatar: 'https://i.pravatar.cc/150?u=you',
+      avatar: '🧑‍💻',
       xp: 12450,
-      level: 5, // Fixed missing arguments
+      level: 5,
       streak: 7,
       tasksWeek: 12,
       isYou: true,
@@ -135,6 +135,38 @@ class SeedData {
       level: 8,
       streak: 10,
       tasksWeek: 30,
+    ),
+    LeaderboardEntry(
+      name: 'Alex Rivera',
+      avatar: 'https://i.pravatar.cc/150?u=alex',
+      xp: 13500,
+      level: 7,
+      streak: 5,
+      tasksWeek: 28,
+    ),
+    LeaderboardEntry(
+      name: 'Elena Gilbert',
+      avatar: 'https://i.pravatar.cc/150?u=elena',
+      xp: 11200,
+      level: 6,
+      streak: 12,
+      tasksWeek: 20,
+    ),
+    LeaderboardEntry(
+      name: 'Damon Salvatore',
+      avatar: 'https://i.pravatar.cc/150?u=damon',
+      xp: 9800,
+      level: 4,
+      streak: 3,
+      tasksWeek: 15,
+    ),
+    LeaderboardEntry(
+      name: 'Bonnie Bennett',
+      avatar: 'https://i.pravatar.cc/150?u=bonnie',
+      xp: 8500,
+      level: 3,
+      streak: 8,
+      tasksWeek: 11,
     ),
   ];
 
@@ -232,12 +264,12 @@ class SeedData {
   ];
 
   static const List<Map<String, dynamic>> hourlyData = [
-    {'hour': '8am', 'tasks': 2},
-    {'hour': '10am', 'tasks': 5},
-    {'hour': '12pm', 'tasks': 3},
-    {'hour': '2pm', 'tasks': 4},
-    {'hour': '4pm', 'tasks': 6},
-    {'hour': '6pm', 'tasks': 2},
+    {'h': '8a', 'v': 2},
+    {'h': '10a', 'v': 5},
+    {'h': '12p', 'v': 3},
+    {'h': '2p', 'v': 4},
+    {'h': '4p', 'v': 6},
+    {'h': '6p', 'v': 2},
   ];
 
   // ── Demo Sets ─────────────────────────────────────────

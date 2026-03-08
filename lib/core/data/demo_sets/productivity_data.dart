@@ -1,6 +1,7 @@
 import '../../theme/app_colors.dart';
 import '../../../features/tasks/models/task_model.dart';
 import '../../../features/tasks/models/note_model.dart';
+import '../../../features/leaderboard/models/leaderboard_entry_model.dart';
 import 'demo_set_model.dart';
 
 final productivityData = DemoSet(
@@ -79,35 +80,31 @@ final productivityData = DemoSet(
           '📅 Rule of 3: Accomplishing 3 meaningful tasks is better than finishing 20 trivial ones.',
       createdAt: DateTime.now().subtract(const Duration(days: 3)),
     ),
-    NoteModel(
-      id: 'prod-n3',
-      content:
-          '🎯 The Pareto Principle: Identify the 20% of tasks creating 80% of your results. Systematize or delegate the rest.',
-      createdAt: DateTime.now().subtract(const Duration(days: 5)),
+  ],
+  leaderboard: [
+    LeaderboardEntry(
+      name: 'Oliver (Deep Worker)',
+      avatar: 'https://i.pravatar.cc/150?u=oliver_prod',
+      xp: 19800,
+      level: 15,
+      streak: 90,
+      tasksWeek: 60,
     ),
-    NoteModel(
-      id: 'prod-n4',
-      content:
-          '🕯️ Evening Ritual: Clearing your physical and digital workspace before finishing the day reduces "cognitive leakage" into the night.',
-      createdAt: DateTime.now().subtract(const Duration(days: 7)),
+    LeaderboardEntry(
+      name: 'Grace (Inbox Zero)',
+      avatar: 'https://i.pravatar.cc/150?u=grace_prod',
+      xp: 17500,
+      level: 11,
+      streak: 30,
+      tasksWeek: 42,
     ),
-    NoteModel(
-      id: 'prod-n5',
-      content:
-          '💻 Tech win: Automated my workspace setup with git hooks! Now, if only we had a magic button to create a short note instantly. 🤔',
-      createdAt: DateTime.now().subtract(const Duration(minutes: 10)),
-    ),
-    NoteModel(
-      id: 'prod-n6',
-      content:
-          '🌙 I saw a dream today: A world where distractions literally dont exist. Every minute was 100% focused.',
-      createdAt: DateTime.now().subtract(const Duration(hours: 3)),
-    ),
-    NoteModel(
-      id: 'prod-n7',
-      content:
-          '✨ Something good happened today: Finished the main task 2 hours ahead of schedule. Deep work is magic.',
-      createdAt: DateTime.now().subtract(const Duration(hours: 18)),
+    LeaderboardEntry(
+      name: 'Ben (The Strategist)',
+      avatar: 'https://i.pravatar.cc/150?u=ben_prod',
+      xp: 15100,
+      level: 9,
+      streak: 14,
+      tasksWeek: 25,
     ),
   ],
   projectStats: [

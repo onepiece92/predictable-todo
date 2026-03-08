@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../models/task_model.dart';
+import '../../../shared/widgets/rainbow_glimmer.dart';
 
 class TaskCard extends StatefulWidget {
   final TaskModel task;
@@ -24,6 +25,7 @@ class TaskCard extends StatefulWidget {
 class _TaskCardState extends State<TaskCard>
     with SingleTickerProviderStateMixin {
   bool _expanded = false;
+  bool _showCelebration = false;
   late final AnimationController _checkCtrl;
   late final Animation<double> _checkScale;
 
@@ -46,7 +48,13 @@ class _TaskCardState extends State<TaskCard>
   }
 
   void _handleQuickToggle() {
-    if (!widget.task.done) _checkCtrl.forward(from: 0);
+    if (!widget.task.done) {
+      _checkCtrl.forward(from: 0);
+      setState(() => _showCelebration = true);
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        if (mounted) setState(() => _showCelebration = false);
+      });
+    }
     widget.onQuickToggle();
   }
 
@@ -69,6 +77,19 @@ class _TaskCardState extends State<TaskCard>
         ),
         child: Stack(
           children: [
+            // Rainbow Border Celebration
+            if (_showCelebration)
+              Positioned.fill(
+                child: RainbowGlimmer(
+                  duration: const Duration(milliseconds: 1000),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(13),
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                  ),
+                ),
+              ),
             // Priority stripe
             Positioned(
               left: 0,
@@ -223,22 +244,25 @@ class _Chip extends StatelessWidget {
   final Color bg;
   final bool mono;
 
-  const _Chip(
-      {required this.label,
-      required this.color,
-      required this.bg,
-      this.mono = false});
+  const _Chip({
+    required this.label,
+    required this.color,
+    required this.bg,
+    this.mono = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration:
-          BoxDecoration(color: bg, borderRadius: BorderRadius.circular(5)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(4),
+      ),
       child: Text(
         label,
         style: mono
-            ? AppTheme.mono(size: 9, color: color)
+            ? AppTheme.mono(size: 9, weight: FontWeight.w600, color: color)
             : AppTheme.sans(size: 9, weight: FontWeight.w600, color: color),
       ),
     );

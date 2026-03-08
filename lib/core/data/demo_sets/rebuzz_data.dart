@@ -1,6 +1,7 @@
 import '../../theme/app_colors.dart';
 import '../../../features/tasks/models/task_model.dart';
 import '../../../features/tasks/models/note_model.dart';
+import '../../../features/leaderboard/models/leaderboard_entry_model.dart';
 import 'demo_set_model.dart';
 
 final rebuzzData = DemoSet(
@@ -160,23 +161,31 @@ final rebuzzData = DemoSet(
           '🔮 Future Roadmap: The "Inventory Forecasting" AI module is the most requested feature from our Platinum users. Beta starts in September.',
       createdAt: DateTime.now().subtract(const Duration(days: 14)),
     ),
-    NoteModel(
-      id: 'reb-n11',
-      content:
-          '💻 Tech win: Learned using git commands today! Still suggest a magic button to create a short note though. 😉',
-      createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
+  ],
+  leaderboard: [
+    LeaderboardEntry(
+      name: 'Sarah (Elite SDR)',
+      avatar: 'https://i.pravatar.cc/150?u=sarah_rebuzz',
+      xp: 15200,
+      level: 10,
+      streak: 15,
+      tasksWeek: 45,
     ),
-    NoteModel(
-      id: 'reb-n12',
-      content:
-          '🌙 I saw a dream today: The POS system was so intuitive it practically sold itself. One day it will be reality.',
-      createdAt: DateTime.now().subtract(const Duration(minutes: 30)),
+    LeaderboardEntry(
+      name: 'Mike (Closers Club)',
+      avatar: 'https://i.pravatar.cc/150?u=mike_rebuzz',
+      xp: 14800,
+      level: 8,
+      streak: 10,
+      tasksWeek: 30,
     ),
-    NoteModel(
-      id: 'reb-n13',
-      content:
-          '✨ Something good happened today: Closing that boutique lead felt effortless. This is why we build.',
-      createdAt: DateTime.now().subtract(const Duration(hours: 1)),
+    LeaderboardEntry(
+      name: 'Alex (Lead Gen Pro)',
+      avatar: 'https://i.pravatar.cc/150?u=alex_rebuzz',
+      xp: 12100,
+      level: 6,
+      streak: 5,
+      tasksWeek: 22,
     ),
   ],
   projectStats: [
